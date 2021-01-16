@@ -181,7 +181,6 @@ function! s:verbose(...)
   endif
 endfunction
 
-let s:last_buffer = -1
 function! s:SourceLocalVimrc(path, origin) abort
   call s:verbose("* Searching local_vimrc for `%1` w/ %=`%2` (nr: %3, ft: `%4`) on %5", a:path, expand('%'), bufnr('%'), lh#option#getbufvar(bufnr('%'), '&ft'), a:origin)
   " If a:path is a directory, it's bufnr may be completly messed up with the
@@ -190,18 +189,9 @@ function! s:SourceLocalVimrc(path, origin) abort
   " `:sp %:h`? Let's say no.
   if isdirectory(a:path)
     call s:verbose("  -> Ø <- Ignore `%1`: this is a directory", a:path)
-    " Reset s:last_buffer in case a plugin took over and changed global
-    " variables
-    let s:last_buffer = -1
-    return
-  endif
-  let bid = bufnr(a:path)
-  if bid == s:last_buffer
-    call s:verbose("  -> Ø <- Ignore `%1`: current buffer (%2) hasn't changed since last time (%3)", a:path, bid, s:last_buffer)
     return
   endif
   if s:IsAForbiddenPath(a:path) | return | endif
-  let s:last_buffer = bid
 
   if !s:local_vimrc_look_only_in_dot_git
     let config_found = lh#path#find_in_parents(a:path, s:local_vimrc, 'file,dir', s:re_last_path)
