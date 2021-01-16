@@ -152,7 +152,12 @@ function! s:LocalVimrcName()
   return type(res) == type('') ? [res] : res
 endfunction
 
+function! s:DotGitLookup()
+  return get(g:, 'local_vimrc_look_only_in_dot_git', v:false)
+endfunction
+
 let s:local_vimrc = s:LocalVimrcName()
+let s:local_vimrc_look_only_in_dot_git = s:DotGitLookup()
 
 " # Value of $HOME -- actually a regex.                               {{{2
 let s:home = substitute($HOME, '[/\\]', '[/\\\\]', 'g')
@@ -198,7 +203,14 @@ function! s:SourceLocalVimrc(path, origin) abort
   if s:IsAForbiddenPath(a:path) | return | endif
   let s:last_buffer = bid
 
-  let config_found = lh#path#find_in_parents(a:path, s:local_vimrc, 'file,dir', s:re_last_path)
+  if !s:local_vimrc_look_only_in_dot_git
+    let config_found = lh#path#find_in_parents(a:path, s:local_vimrc, 'file,dir', s:re_last_path)
+  else
+    let l:gitdir = lh#string#trim(system('git rev-parse --git-common-dir'))
+    if l:gitdir != ""
+      let config_found = [l:gitdir . "/" . s:local_vimrc[0]]
+    endif
+  endif
   let configs = []
   for config in config_found
     if filereadable(config)
